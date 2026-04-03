@@ -134,11 +134,6 @@
                         
                         <div id="checklistItemsWrapper" class="space-y-5"></div>
                     </div>
-
-                    <div class="pt-4 border-t border-slate-200">
-                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">Observações Gerais</label>
-                        <textarea id="observations" rows="3" placeholder="Insira o texto técnico ou ressalvas do lote..." oninput="updatePreview()" class="w-full p-2 border border-slate-300 rounded text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-slate-400 outline-none resize-none"></textarea>
-                    </div>
                 </form>
             </div>
         </div>
@@ -429,7 +424,6 @@
             const culture = document.getElementById('cultureSelect').value;
             const producer = document.getElementById('producerName').value || 'Não informado';
             const inspector = getInspectorName() || 'Inspetor não informado';
-            const obs = document.getElementById('observations').value;
 
             let displayDate = "--/--/----";
             if (dateVal) {
@@ -556,19 +550,6 @@
             } else {
                 previewStatus.className = "text-sm lg:text-lg font-black uppercase tracking-widest text-green-800";
                 previewStatus.innerText = "LOTE APROVADO (CONFORME)";
-            }
-
-            if (obs.trim().length > 0) {
-                checklistResultsHtml += `
-                    <div class="mt-8 border-2 border-slate-200 rounded-lg bg-white overflow-hidden shadow-sm">
-                        <div class="bg-slate-100 px-4 py-3 border-b-2 border-slate-200">
-                            <h4 class="text-sm font-black text-slate-800 uppercase tracking-widest">III. Observações Técnicas Gerais</h4>
-                        </div>
-                        <div class="p-4">
-                            <p class="text-base text-slate-800 whitespace-pre-wrap font-medium leading-relaxed font-mono uppercase">${obs}</p>
-                        </div>
-                    </div>
-                `;
             }
 
             previewContent.innerHTML = checklistResultsHtml;
@@ -719,7 +700,6 @@
                 const producer = document.getElementById('producerName').value;
                 const inspector = getInspectorName();
                 const dateVal = document.getElementById('reportDate').value;
-                const obs = document.getElementById('observations').value;
                 const dateObj = new Date(dateVal + "T00:00:00");
                 const dateStr = dateObj.toLocaleDateString('pt-BR').replace(/\//g, '-');
                 const filename = `FCQ_${currentReportId}_${culture}_${dateStr}.png`;
@@ -758,11 +738,10 @@
                 let shareText = `📄 *FICHA DE CONTROLE DE QUALIDADE - SPG*\n\n*ID da Ficha:* ${currentReportId}\n*Produto:* ${culture}\n*Origem:* ${producer}\n*Inspetor:* ${inspector}\n*Data:* ${dateObj.toLocaleDateString('pt-BR')}\n*Parecer:* ${statusLabel}\n`;
                 if (nokCountShare > 0) { shareText += `\n*NÃO CONFORMIDADES IDENTIFICADAS:*${checklistTextWhatsApp}`; }
                 else { shareText += `\n*✅ LOTE CONFORME:* Todos os parâmetros de qualidade foram validados.\n`; }
-                if (obs.trim().length > 0) { shareText += `\n*Observações Técnicas:* \n${obs.trim()}\n`; }
                 
                 let payload = [];
                 allItemsList.forEach((itemData, index) => {
-                    payload.push({ id: currentReportId, date: dateObj.toLocaleDateString('pt-BR'), time: new Date().toLocaleTimeString('pt-BR'), culture: culture, producer: producer, inspector: inspector, status: lotStatusText, condition: itemData.condition, category: itemData.category, defectItem: itemData.condition === 'NOK' ? itemData.item : "-", okItem: itemData.condition === 'OK' ? itemData.item : "-", observations: index === 0 ? (obs.trim() || "Nenhuma") : "-" });
+                    payload.push({ id: currentReportId, date: dateObj.toLocaleDateString('pt-BR'), time: new Date().toLocaleTimeString('pt-BR'), culture: culture, producer: producer, inspector: inspector, status: lotStatusText, condition: itemData.condition, category: itemData.category, defectItem: itemData.condition === 'NOK' ? itemData.item : "-", okItem: itemData.condition === 'OK' ? itemData.item : "-" });
                 });
                 sendDataToGoogleSheets(payload);
                 const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
@@ -783,7 +762,7 @@
         }
 
         async function sendDataToGoogleSheets(payload) {
-            const SCRIPT_URL = "SUA_NOVA_URL_DO_APPS_SCRIPT_AQUI"; 
+            const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzQ5iJxKxrfV-ErWq1deMxpQtkdxZxGAfUSz2ZJAXmEU7ZIsWVXwqJKiSmhvbkLu64b/exec"; 
             if (!SCRIPT_URL || SCRIPT_URL === "SUA_NOVA_URL_DO_APPS_SCRIPT_AQUI") { return; }
             try { await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) }); } 
             catch (err) { console.error("Falha na sincronização:", err); }
