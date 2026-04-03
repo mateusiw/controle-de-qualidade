@@ -134,6 +134,22 @@
                         
                         <div id="checklistItemsWrapper" class="space-y-5"></div>
                     </div>
+
+                    <!-- NOVA SECÇÃO: FOTOS GERAIS DO LOTE -->
+                    <div id="generalPhotosContainer" class="hidden mt-6 animate-fade-in-down border-t border-slate-200 pt-4">
+                        <h3 class="text-sm font-black text-slate-800 uppercase tracking-wide mb-1">Evidências do Lote</h3>
+                        <p class="text-[10px] text-slate-500 uppercase tracking-widest mb-4">Anexe fotos gerais para comprovar a inspeção.</p>
+                        
+                        <div class="bg-white p-3 border border-slate-300 rounded-sm">
+                            <label class="text-[10px] font-bold text-slate-700 uppercase tracking-widest mb-2 flex items-center justify-between">
+                                <span>Fotos Gerais (Máx 6)</span>
+                                <span id="counter_general" class="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-sm">0/6</span>
+                            </label>
+                            <input type="file" id="upload_general" accept="image/*" multiple capture="environment" onchange="handleGeneralPhotos(event)" class="text-xs w-full file:mr-2 file:py-1 file:px-2 file:rounded-sm file:border-0 file:bg-blue-600 file:text-white file:font-bold border border-slate-300 rounded-sm p-1 hover:file:bg-blue-700 cursor-pointer">
+                            <div id="preview_general" class="flex gap-2 mt-2 flex-wrap empty:hidden"></div>
+                        </div>
+                    </div>
+
                 </form>
             </div>
         </div>
@@ -147,7 +163,6 @@
                 <!-- CABEÇALHO ORGANIZADO -->
                 <div class="bg-white border-b-4 border-slate-800 p-6 lg:p-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 shrink-0">
                     <div class="flex items-center gap-6 w-full lg:w-auto">
-                        <!-- SEM LOGO, APENAS TÍTULO EM UMA LINHA -->
                         <h2 class="text-3xl lg:text-4xl font-black text-slate-900 uppercase tracking-tighter leading-none m-0">Ficha de Controle de Qualidade</h2>
                     </div>
                     <div class="flex items-center gap-8 w-full lg:w-auto lg:border-l-2 border-slate-200 lg:pl-8 mt-4 lg:mt-0">
@@ -162,7 +177,7 @@
                     </div>
                 </div>
 
-                <!-- DADOS DO LOTE (BLOCO ESTRUTURADO COM PARECER NO LADO DIREITO) -->
+                <!-- DADOS DO LOTE -->
                 <div class="mx-6 lg:mx-10 mt-8 mb-6 border-2 border-slate-200 rounded-lg bg-slate-50 flex flex-col lg:flex-row divide-y-2 lg:divide-y-0 lg:divide-x-2 divide-slate-200 shrink-0 overflow-hidden shadow-sm">
                     <div class="p-5 lg:p-6 flex-1 bg-white">
                         <span class="text-[10px] lg:text-xs text-slate-400 font-bold uppercase tracking-widest block mb-2">Produto Avaliado</span>
@@ -176,7 +191,6 @@
                         <span class="text-[10px] lg:text-xs text-slate-400 font-bold uppercase tracking-widest block mb-2">Inspetor Responsável</span>
                         <span id="previewInspector" class="text-lg lg:text-xl font-bold text-slate-800 uppercase leading-snug">---</span>
                     </div>
-                    <!-- PARECER FINAL AO LADO DOS DADOS, SEM BORDA -->
                     <div class="p-5 lg:p-6 flex-1 bg-slate-50 flex flex-col justify-center items-start">
                         <span class="text-[10px] lg:text-xs text-slate-500 font-black uppercase tracking-widest block mb-2">Parecer Final do Lote</span>
                         <div>
@@ -262,6 +276,7 @@
         };
 
         let itemPhotos = {}; 
+        let generalPhotos = []; // Array para as fotos de visão geral
         let currentReportId = "------";
 
         function generateReportId() {
@@ -308,7 +323,7 @@
         }
 
         function getTotalPhotosCount() {
-            let count = 0;
+            let count = generalPhotos.length;
             for (let key in itemPhotos) {
                 count += itemPhotos[key].length;
             }
@@ -322,8 +337,9 @@
             const radios = document.querySelectorAll('.check-radio');
             radios.forEach(radio => radio.checked = false);
             
-            // Limpa as fotos do produtor anterior
+            // Limpa as fotos do produtor anterior (defeitos e gerais)
             itemPhotos = {};
+            generalPhotos = [];
             
             // Esconde os painéis de foto e zera os contadores
             const photoSections = document.querySelectorAll('div[id^="photo_section_"]');
@@ -335,18 +351,25 @@
             const counters = document.querySelectorAll('span[id^="counter_chk_"]');
             counters.forEach(c => c.innerText = '0/1');
 
+            document.getElementById('preview_general').innerHTML = '';
+            document.getElementById('counter_general').innerText = '0/6';
+
             updatePreview();
         }
 
         function handleCultureChange() {
             const culture = document.getElementById('cultureSelect').value;
             const container = document.getElementById('checklistContainer');
+            const generalPhotosContainer = document.getElementById('generalPhotosContainer');
             const wrapper = document.getElementById('checklistItemsWrapper');
             const producerSelect = document.getElementById('producerName');
             
             itemPhotos = {}; 
+            generalPhotos = [];
             wrapper.innerHTML = '';
             producerSelect.innerHTML = '<option value="">Aguardando Cultura</option>';
+            document.getElementById('preview_general').innerHTML = '';
+            document.getElementById('counter_general').innerText = '0/6';
             currentReportId = generateReportId();
             
             if (culture) {
@@ -415,6 +438,7 @@
                 producerSelect.innerHTML = '<option value="">Aguardando cultura...</option>';
                 producerSelect.disabled = true;
                 container.classList.add('hidden');
+                generalPhotosContainer.classList.add('hidden');
             }
             updatePreview();
         }
@@ -453,7 +477,7 @@
 
             let allAnswered = true;
             let nokCount = 0;
-            let hasDefectPhotos = false;
+            let hasPhotos = false;
             
             // LADO 1: Tabela de Validação Estruturada em Blocos
             let leftColHtml = `<div class="flex-1 flex flex-col gap-6">
@@ -505,7 +529,7 @@
                             </li>`;
 
                         if (itemPhotos[inputName] && itemPhotos[inputName].length > 0) {
-                            hasDefectPhotos = true;
+                            hasPhotos = true;
                             // Imagens grandes e preenchendo o espaço
                             let photosHtml = `<div class="flex w-full h-full flex-1 items-stretch justify-center">`;
                             itemPhotos[inputName].forEach(p => {
@@ -513,7 +537,7 @@
                             });
                             photosHtml += `</div>`;
 
-                            // Caixas de foto sem as bordas cinzentas envolta da imagem
+                            // Caixas de foto de defeitos
                             rightColHtml += `
                                 <div class="flex flex-col h-full gap-2 mb-4">
                                     <div class="border-l-4 border-slate-800 pl-3 flex items-start">
@@ -529,13 +553,49 @@
                 });
                 leftColHtml += `</ul></div>`;
             });
+
+            // NOVO: Lógica de exibição das Evidências Gerais (Só mostra se tudo for OK)
+            const generalPhotosContainer = document.getElementById('generalPhotosContainer');
+            if (generalPhotosContainer) {
+                if (allAnswered && nokCount === 0) {
+                    generalPhotosContainer.classList.remove('hidden');
+                } else {
+                    generalPhotosContainer.classList.add('hidden');
+                    // Se ocultou, limpa as fotos gerais para não haver ficheiros "escondidos"
+                    if (generalPhotos.length > 0) {
+                        generalPhotos = [];
+                        const uploadGen = document.getElementById('upload_general');
+                        if(uploadGen) uploadGen.value = '';
+                        document.getElementById('preview_general').innerHTML = '';
+                        document.getElementById('counter_general').innerText = '0/6';
+                        if(globalCounter) globalCounter.innerText = `${getTotalPhotosCount()} / 6`;
+                    }
+                }
+            }
+
+            // Se houver fotos gerais, adiciona-as também à direita
+            if (generalPhotos.length > 0) {
+                hasPhotos = true;
+                generalPhotos.forEach((p, idx) => {
+                    rightColHtml += `
+                        <div class="flex flex-col h-full gap-2 mb-4">
+                            <div class="border-l-4 border-blue-600 pl-3 flex items-start">
+                                <span class="text-sm lg:text-base font-black text-slate-900 uppercase tracking-wider leading-tight">VISÃO GERAL DO LOTE (${idx + 1})</span>
+                            </div>
+                            <div class="flex-1 w-full mt-1">
+                                <img src="${p}" class="w-full h-full object-cover min-h-[400px] border border-slate-200 rounded shadow-sm">
+                            </div>
+                        </div>
+                    `;
+                });
+            }
             
             leftColHtml += `</div></div>`;
             rightColHtml += `</div></div>`;
 
             let checklistResultsHtml = `<div class="flex flex-col lg:flex-row w-full mt-2 gap-6 sm:gap-10">
                 ${leftColHtml}
-                ${hasDefectPhotos ? rightColHtml : ''}
+                ${hasPhotos ? rightColHtml : ''}
             </div>`;
 
             if (!allAnswered) {
@@ -609,6 +669,51 @@
             updatePreview();
         }
 
+        // NOVO: Gerenciador de Fotos Gerais
+        async function handleGeneralPhotos(event) {
+            const files = Array.from(event.target.files);
+            if (!files.length) return;
+            
+            const totalCount = getTotalPhotosCount();
+            if (totalCount + files.length > 6) {
+                showMessageModal('LIMITE TOTAL EXCEDIDO', 'A ficha permite no máximo 6 fotos no total.', 'error');
+                event.target.value = '';
+                return;
+            }
+
+            const uploadBtn = document.getElementById('upload_general');
+            uploadBtn.disabled = true;
+            for (const file of files) { 
+                if (!file.type.startsWith('image/')) continue; 
+                const base64 = await processImage(file); 
+                generalPhotos.push(base64); 
+            }
+            uploadBtn.value = ''; 
+            uploadBtn.disabled = false;
+            renderGeneralPhotos();
+            updatePreview();
+        }
+
+        function renderGeneralPhotos() {
+            const container = document.getElementById('preview_general');
+            const counter = document.getElementById('counter_general');
+            counter.innerText = `${generalPhotos.length}/6`;
+            if (generalPhotos.length === 0) { container.innerHTML = ''; return; }
+            container.innerHTML = generalPhotos.map((photo, index) => `
+                <div class="relative inline-block mt-2 mr-2">
+                    <img src="${photo}" class="w-16 h-16 object-cover rounded-sm border border-slate-300 shadow-sm bg-white p-0.5">
+                    <button type="button" onclick="removeGeneralPhoto(${index})" class="absolute -top-2 -right-2 bg-red-600 border border-red-800 text-white rounded-sm p-0.5 shadow-md hover:bg-red-700 transition-colors"><i data-lucide="x" class="w-3 h-3"></i></button>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function removeGeneralPhoto(index) {
+            generalPhotos.splice(index, 1);
+            renderGeneralPhotos();
+            updatePreview();
+        }
+
         function processImage(file) {
             return new Promise((resolve) => {
                 const reader = new FileReader();
@@ -644,6 +749,13 @@
                 });
             }
             if(!allChecked) { showMessageModal('DOCUMENTO INCOMPLETO', 'Todos os critérios técnicos devem ser avaliados antes da emissão.', 'error'); return; }
+            
+            // TRAVA DE SEGURANÇA: Obriga a enviar ao menos 1 foto.
+            if(getTotalPhotosCount() === 0) {
+                showMessageModal('EVIDÊNCIA OBRIGATÓRIA', 'Para emitir a ficha, é obrigatório anexar pelo menos 1 foto (geral ou defeito) para comprovar a inspeção.', 'error'); 
+                return;
+            }
+
             document.getElementById('confirmModal').classList.remove('hidden'); 
             lucide.createIcons(); 
         }
@@ -757,6 +869,15 @@
                 if(btnSpan) btnSpan.innerText = originalText; 
                 isProcessingShare = false; 
                 currentReportId = generateReportId(); 
+                
+                // Limpa as imagens todas pós-geração para deixar a tela pronta para o próximo
+                itemPhotos = {};
+                generalPhotos = [];
+                const radios = document.querySelectorAll('.check-radio');
+                radios.forEach(radio => radio.checked = false);
+                document.getElementById('preview_general').innerHTML = '';
+                document.getElementById('counter_general').innerText = '0/6';
+
                 updatePreview();
             }
         }
