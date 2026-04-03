@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ficha de Controle de Qualidade SPG</title>
+    
+    <link rel="icon" type="image/png" href="https://i.imgur.com/wEozr34.png">
+    <link rel="apple-touch-icon" href="https://i.imgur.com/wEozr34.png">
+    <link rel="manifest" href='data:application/manifest+json,{"name":"Controle de Qualidade SPG","short_name":"Qualidade","start_url":".","display":"standalone","background_color":"#ffffff","theme_color":"#475569","icons":[{"src":"https://i.imgur.com/wEozr34.png","sizes":"192x192","type":"image/png"},{"src":"https://i.imgur.com/wEozr34.png","sizes":"512x512","type":"image/png"}]}'>
+    
+    <meta name="theme-color" content="#475569">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Recebimento SPG">
+    
+    <!-- Bibliotecas Externas -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-tap-highlight-color: transparent; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        input, select, textarea { line-height: 1.5; }
+        .animate-fade-in-down { animation: fadeInDown 0.3s ease-out forwards; }
+        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .check-radio:checked + div { border-color: currentColor; background-color: currentColor; }
+        .check-radio:checked + div span { color: white; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen pb-20 select-none">
+
+    <!-- Navbar -->
+    <div class="bg-slate-800 border-b border-slate-900 px-4 py-3 flex justify-between items-center shadow-md sticky top-0 z-40">
+        <div class="flex items-center gap-3">
+            <img src="https://i.imgur.com/wEozr34.png" alt="Logo SPG" class="w-8 h-8 rounded shadow-sm border border-slate-600 bg-white p-0.5">
+            <div>
+                <h1 class="text-sm font-bold text-white leading-tight">SPG SEDE</h1>
+                <p class="text-[10px] text-slate-300 font-bold uppercase tracking-widest">Inspeção de Qualidade</p>
+            </div>
+        </div>
+        <div class="flex gap-2 text-white">
+            <div class="hidden sm:flex flex-col items-end justify-center mr-2">
+                <span class="text-[9px] uppercase font-bold text-slate-400">Total Fotos</span>
+                <span id="globalPhotoCounter" class="text-xs font-black">0 / 6</span>
+            </div>
+            <button type="button" onclick="confirmBeforeSend()" class="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-bold shadow transition-all active:scale-95">
+                <i data-lucide="share-2" class="w-4 h-4"></i>
+                <span class="hidden sm:inline">Gerar Ficha</span>
+                <span class="sm:hidden">Gerar</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="w-full max-w-[1600px] mx-auto p-4 flex flex-col xl:flex-row gap-6 mt-4 items-start">
+        
+        <!-- COLUNA DA ESQUERDA: FORMULÁRIO -->
+        <div class="w-full xl:w-[30%] space-y-4 shrink-0">
+
+            <div class="bg-white p-5 rounded-md shadow-sm border border-slate-300">
+                <h2 class="text-sm font-black text-slate-800 uppercase tracking-wide border-b-2 border-slate-800 pb-2 mb-4 flex items-center gap-2">
+                    <i data-lucide="clipboard-list" class="w-4 h-4"></i> Controle de Dados
+                </h2>
+                
+                <form id="checklistForm" class="space-y-4">
+                    <div class="grid grid-cols-1 gap-4">
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">Data da Inspeção</label>
+                            <input type="date" id="reportDate" required onchange="updatePreview()" class="w-full p-2 border border-slate-300 rounded text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-slate-400 outline-none">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">Produto / Cultura</label>
+                            <select id="cultureSelect" required onchange="handleCultureChange()" class="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-slate-400 outline-none text-sm bg-slate-50 focus:bg-white">
+                                <option value="">Selecione</option>
+                                <option value="Brócolis">Brócolis</option>
+                                <option value="Couve-Flor">Couve-Flor</option>
+                                <option value="Tomate Cereja">Tomate Cereja</option>
+                                <option value="Pepino">Pepino</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">Produtor / Origem</label>
+                        <select id="producerName" required onchange="handleProducerChange()" class="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-slate-400 outline-none text-sm bg-slate-50 focus:bg-white disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed">
+                            <option value="">Aguardando Cultura</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">Inspetor Responsável</label>
+                        <select id="inspectorSelect" required onchange="handleInspectorChange()" class="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-slate-400 outline-none text-sm bg-slate-50 focus:bg-white">
+                            <option value="">Selecione</option>
+                            <option value="Dionisio Pereira de Albuquerque">Dionisio Pereira de Albuquerque</option>
+                            <option value="João Victor Gonçalves">João Victor Gonçalves</option>
+                            <option value="Thaynara Rodrigues da Silva">Thaynara Rodrigues da Silva</option>
+                            <option value="Alesandra Leitão">Alesandra Leitão</option>
+                            <option value="Francisco Fagner Isaias">Francisco Fagner Isaias</option>
+                            <option value="Outro">Outro (Digitar)</option>
+                        </select>
+                        
+                        <div id="customInspectorContainer" class="hidden mt-2 animate-fade-in-down">
+                            <input type="text" id="customInspectorName" placeholder="Nome do inspetor..." oninput="updatePreview()" class="w-full p-2 border border-slate-300 bg-white rounded text-sm focus:ring-2 focus:ring-slate-400 outline-none uppercase">
+                        </div>
+                    </div>
+
+                    <div id="checklistContainer" class="hidden mt-6 animate-fade-in-down border-t border-slate-200 pt-4">
+                        <h3 class="text-sm font-black text-slate-800 uppercase tracking-wide mb-1">Critérios Técnicos</h3>
+                        <p class="text-[10px] text-slate-500 uppercase tracking-widest mb-4">Insira o status de conformidade.</p>
+                        
+                        <div id="checklistItemsWrapper" class="space-y-5"></div>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-200">
+                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">Observações Gerais</label>
+                        <textarea id="observations" rows="3" placeholder="Insira o texto técnico ou ressalvas do lote..." oninput="updatePreview()" class="w-full p-2 border border-slate-300 rounded text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-slate-400 outline-none resize-none"></textarea>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- COLUNA DA DIREITA: PREVIEW DO RELATÓRIO TÉCNICO -->
+        <div class="w-full xl:w-[70%] bg-slate-200 p-2 sm:p-6 lg:p-8 rounded shadow-inner overflow-x-hidden">
+            
+            <!-- CARTÃO PRINCIPAL DO LAUDO (A4 PROPORCIONAL) -->
+            <div id="report-card" class="w-full flex flex-col bg-white shadow-xl relative border border-slate-300 mx-auto">
+                
+                <!-- CABEÇALHO ORGANIZADO -->
+                <div class="bg-white border-b-4 border-slate-800 p-6 lg:p-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 shrink-0">
+                    <div class="flex items-center gap-6 w-full lg:w-auto">
+                        <h2 class="text-3xl lg:text-4xl font-black text-slate-900 uppercase tracking-tighter leading-none m-0">Ficha de Controle de Qualidade</h2>
+                    </div>
+                    <div class="flex items-center gap-8 w-full lg:w-auto lg:border-l-2 border-slate-200 lg:pl-8 mt-4 lg:mt-0">
+                        <div class="text-left">
+                            <p class="text-xs lg:text-sm font-bold text-slate-400 uppercase tracking-widest mb-1">ID da Ficha</p>
+                            <p id="previewReportId" class="text-2xl lg:text-3xl font-black text-blue-700 tracking-wider font-mono leading-none m-0">------</p>
+                        </div>
+                        <div class="text-left border-l-2 border-slate-200 pl-8">
+                            <p class="text-xs lg:text-sm font-bold text-slate-400 uppercase tracking-widest mb-1">Data Inspeção</p>
+                            <p id="previewDateTime" class="text-2xl lg:text-3xl font-black text-slate-800 leading-none m-0">--/--/----</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DADOS DO LOTE (BLOCO ESTRUTURADO) -->
+                <div class="mx-6 lg:mx-10 mt-8 mb-6 border-2 border-slate-200 rounded-lg bg-slate-50 flex flex-col lg:flex-row divide-y-2 lg:divide-y-0 lg:divide-x-2 divide-slate-200 shrink-0 overflow-hidden shadow-sm">
+                    <div class="p-5 lg:p-6 flex-1 bg-white">
+                        <span class="text-[10px] lg:text-xs text-slate-400 font-bold uppercase tracking-widest block mb-2">Produto Avaliado</span>
+                        <span id="previewCulture" class="text-xl lg:text-2xl font-black text-slate-900 uppercase leading-tight">---</span>
+                    </div>
+                    <div class="p-5 lg:p-6 flex-1 bg-white">
+                        <span class="text-[10px] lg:text-xs text-slate-400 font-bold uppercase tracking-widest block mb-2">Origem / Produtor</span>
+                        <span id="previewProducer" class="text-lg lg:text-xl font-bold text-slate-800 uppercase leading-snug">---</span>
+                    </div>
+                    <div class="p-5 lg:p-6 flex-1 bg-white">
+                        <span class="text-[10px] lg:text-xs text-slate-400 font-bold uppercase tracking-widest block mb-2">Inspetor Responsável</span>
+                        <span id="previewInspector" class="text-lg lg:text-xl font-bold text-slate-800 uppercase leading-snug">---</span>
+                    </div>
+                    <div class="p-5 lg:p-6 flex-1 bg-slate-50 flex flex-col justify-center items-start">
+                        <span class="text-[10px] lg:text-xs text-slate-500 font-black uppercase tracking-widest block mb-2">Parecer Final do Lote</span>
+                        <div>
+                            <span id="previewStatus" class="text-sm lg:text-lg font-black uppercase tracking-widest text-slate-500">
+                                AGUARDANDO...
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CONTEÚDO (TABELAS E FOTOS) -->
+                <div id="previewContent" class="px-6 lg:px-10 pb-10 pt-4 flex flex-col h-auto min-h-[300px] justify-start bg-white">
+                    <div class="text-center text-slate-400 text-sm font-bold py-24 my-auto uppercase tracking-widest border-2 border-dashed border-slate-200 rounded-lg bg-slate-50">
+                        Aguardando dados da inspeção...
+                    </div>
+                </div>
+
+                <!-- RODAPÉ -->
+                <div class="bg-slate-800 p-6 lg:p-8 text-center shrink-0 mt-auto border-t-4 border-slate-700">
+                    <div class="flex justify-center items-center gap-2 text-sm lg:text-base text-slate-300 font-bold uppercase tracking-widest">
+                        <i data-lucide="shield-check" class="w-5 h-5"></i>
+                        Documento de Qualidade Gerado Eletronicamente • SPG Sede
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAIS -->
+    <div id="confirmModal" class="fixed inset-0 bg-black/80 z-[60] hidden flex justify-center items-center backdrop-blur-sm transition-opacity duration-300">
+        <div class="bg-white rounded-md shadow-2xl p-6 w-11/12 max-w-md transform transition-all scale-100 border border-slate-300">
+            <h3 class="text-xl font-black text-slate-800 text-center border-b border-slate-200 pb-3 mb-3 uppercase tracking-tight">Confirmar Emissão?</h3>
+            <p class="text-sm text-slate-600 text-center leading-relaxed font-medium">
+                Verifique se todos os apontamentos e evidências técnicas estão corretos.<br><br>
+                <span class="text-slate-800 font-bold">A ficha de controle será exportada e arquivada na planilha.</span>
+            </p>
+            <div class="grid grid-cols-2 gap-3 mt-6">
+                <button onclick="hideConfirmModal()" class="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-sm text-xs transition-colors uppercase tracking-wider">Revisar</button>
+                <button onclick="executeSend()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-sm text-xs transition-all uppercase tracking-wider">Emitir Ficha</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE MENSAGEM -->
+    <div id="messageModal" class="fixed inset-0 bg-black/80 z-50 hidden flex justify-center items-center backdrop-blur-sm transition-opacity duration-300">
+        <div class="bg-white rounded-md shadow-2xl p-6 w-11/12 max-w-sm transform transition-all scale-100 text-center border border-slate-300">
+            <div id="msgIconContainer" class="mx-auto flex items-center justify-center h-12 w-12 rounded bg-slate-100 mb-4 border border-slate-300"></div>
+            <h3 id="msgTitle" class="text-lg font-black text-slate-800 uppercase tracking-tight mb-2"></h3>
+            <p id="msgText" class="text-sm text-slate-600 mb-5"></p>
+            <button onclick="hideMessageModal()" class="w-full px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-sm text-xs uppercase tracking-wider transition-colors">CIENTE</button>
+        </div>
+    </div>
+
+    <script>
+        const checklistData = {
+            "Brócolis": [
+                { category: "Qualidade Visual e Física", items: ["Aspecto visual sadio e fresco", "Cor normal (não está amarelo)", "Sem manchas ou fungos", "Firme e sem florir", "Cabeça compacta (granulação fechada)", "Sem danos mecânicos (amassados ou quebras)"] },
+                { category: "Pragas e Padrão", items: ["Sem lagartas ou insetos", "Tamanho adequado", "Seco (não está encharcado)", "Talo firme e sem rachaduras", "Ausência de resíduos estranhos visíveis", "Talo com corte limpo (sem fiapos)"] },
+                { category: "Acondicionamento", items: ["Caixas limpas", "Sem excesso na caixa (não esmaga o produto)", "Sem cheiro de fermentação", "Caixas íntegras (sem rasgos ou quebras)", "Peso/Volume da caixa dentro do padrão"] }
+            ],
+            "Couve-Flor": [
+                { category: "Qualidade Visual e Física", items: ["Branca, limpa e firme", "Sem manchas ou podridão", "Com folhas de proteção", "Firme (não está esponjosa)", "Granulação fechada (sem aspecto felpudo)", "Folhas de proteção verdes e com aspecto fresco", "Sem danos mecânicos evidentes"] },
+                { category: "Pragas e Padrão", items: ["Sem lagartas ou insetos", "Tamanho e peso adequados", "Talo limpo e sem podridão", "Ausência de resíduos estranhos visíveis", "Base com corte limpo e nivelado"] },
+                { category: "Acondicionamento", items: ["Caixas limpas", "Sem excesso na caixa (não esmaga o produto)", "Sem cheiro de fermentação", "Caixas íntegras (sem rasgos ou quebras)", "Peso/Volume da caixa dentro do padrão"] }
+            ],
+            "Tomate Cereja": [
+                { category: "Qualidade Visual e Física", items: ["Cor uniforme (sem partes verdes)", "Firme (não está mole ou passado)", "Sem rachaduras ou furos", "Cabinhos verdes (fresco)", "Brilho característico da variedade", "Ponto de maturação ideal (sem estar muito verde)", "Sem danos mecânicos graves (amassados)"] },
+                { category: "Pragas e Padrão", items: ["Sem podridão ou fungos", "Tamanho padrão", "Limpo (sem excesso de terra)", "Ausência de resíduos estranhos visíveis", "Livre de insetos ou pragas rasteiras"] },
+                { category: "Acondicionamento", items: ["Caixas limpas", "Fundo seco (sem tomates estourados)", "Volume da caixa dentro do padrão (bem nivelada)", "Caixas íntegras (sem rasgos ou quebras)"] }
+            ],
+            "Pepino": [
+                { category: "Qualidade Visual e Física", items: ["Reto (sem excesso de tortos)", "Verde e firme", "Sem pontas murchas", "Casca sem arranhões fundos", "Coloração verde uniforme (sem manchas amarelas)", "Brilho natural preservado", "Sem cicatrizes ou defeitos graves na casca"] },
+                { category: "Pragas e Padrão", items: ["Sem fungos ou podridão", "Tamanho padrão", "Casca lisa (sem enrugar)", "Ausência de resíduos estranhos visíveis", "Sem perfurações de brocas ou insetos"] },
+                { category: "Acondicionamento", items: ["Caixas limpas", "Sem mato ou terra na caixa", "Caixas íntegras (sem rasgos ou quebras)", "Peso/Volume da caixa dentro do padrão"] }
+            ]
+        };
+
+        const producersData = {
+            "Brócolis": ["Fazenda Oásis", "Sítio Valdir", "Sítio Leitão", "Sítio Márcia", "Sítio Filho", "Sítio Evandro", "Sítio Edivan", "Sítio Araçá", "Agrotech Pinheiro"],
+            "Couve-Flor": ["Fazenda Oásis", "Agrotech Pinheiro", "Hélio"],
+            "Tomate Cereja": ["Raimundo", "Nelinho", "Gutenberg"],
+            "Pepino": ["SPG Estufa 1"]
+        };
+
+        let itemPhotos = {}; 
+        let currentReportId = "------";
+
+        function generateReportId() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let result = '';
+            for (let i = 0; i < 6; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            lucide.createIcons();
+            const dateInput = document.getElementById('reportDate');
+            if (!dateInput.value) {
+                const today = new Date();
+                dateInput.value = today.toISOString().split('T')[0];
+            }
+            currentReportId = generateReportId();
+            updatePreview();
+        });
+
+        function handleInspectorChange() {
+            const inspectorSelect = document.getElementById('inspectorSelect');
+            const customContainer = document.getElementById('customInspectorContainer');
+            const customInput = document.getElementById('customInspectorName');
+            
+            if (inspectorSelect.value === 'Outro') {
+                customContainer.classList.remove('hidden');
+                customInput.setAttribute('required', 'required');
+            } else {
+                customContainer.classList.add('hidden');
+                customInput.removeAttribute('required');
+            }
+            updatePreview();
+        }
+
+        function getInspectorName() {
+            const selectVal = document.getElementById('inspectorSelect').value;
+            if (selectVal === 'Outro') {
+                return document.getElementById('customInspectorName').value;
+            }
+            return selectVal;
+        }
+
+        function getTotalPhotosCount() {
+            let count = 0;
+            for (let key in itemPhotos) {
+                count += itemPhotos[key].length;
+            }
+            return count;
+        }
+
+        function handleProducerChange() {
+            currentReportId = generateReportId();
+            
+            // Zera todas as marcações das perguntas
+            const radios = document.querySelectorAll('.check-radio');
+            radios.forEach(radio => radio.checked = false);
+            
+            // Limpa as fotos anexadas aos defeitos do produtor anterior
+            itemPhotos = {};
+            
+            // Esconde os painéis de foto e zera os contadores
+            const photoSections = document.querySelectorAll('div[id^="photo_section_"]');
+            photoSections.forEach(section => section.classList.add('hidden'));
+            
+            const previews = document.querySelectorAll('div[id^="preview_chk_"]');
+            previews.forEach(p => p.innerHTML = '');
+            
+            const counters = document.querySelectorAll('span[id^="counter_chk_"]');
+            counters.forEach(c => c.innerText = '0/1');
+
+            updatePreview();
+        }
+
+        function handleCultureChange() {
+            const culture = document.getElementById('cultureSelect').value;
+            const container = document.getElementById('checklistContainer');
+            const wrapper = document.getElementById('checklistItemsWrapper');
+            const producerSelect = document.getElementById('producerName');
+            
+            itemPhotos = {}; 
+            wrapper.innerHTML = '';
+            producerSelect.innerHTML = '<option value="">Aguardando Cultura</option>';
+            currentReportId = generateReportId();
+            
+            if (culture) {
+                if (producersData[culture]) {
+                    producerSelect.disabled = false;
+                    producerSelect.innerHTML = '<option value="">Selecione</option>';
+                    producersData[culture].forEach(producer => {
+                        const option = document.createElement('option');
+                        option.value = producer; 
+                        option.textContent = producer;
+                        producerSelect.appendChild(option);
+                    });
+                }
+
+                if (checklistData[culture]) {
+                    container.classList.remove('hidden');
+                    
+                    checklistData[culture].forEach((group, groupIdx) => {
+                        let groupHtml = `
+                            <div class="mb-5 bg-slate-50 border border-slate-200 rounded-md overflow-hidden">
+                                <div class="bg-slate-200 border-b border-slate-300 px-3 py-2">
+                                    <h4 class="text-[10px] font-black text-slate-700 uppercase tracking-widest">${group.category}</h4>
+                                </div>
+                                <div class="divide-y divide-slate-200 text-sm">
+                        `;
+                        
+                        group.items.forEach((item, itemIdx) => {
+                            const inputName = `chk_${groupIdx}_${itemIdx}`;
+                            groupHtml += `
+                                <div class="p-3 bg-white">
+                                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                                        <span class="text-slate-700 font-medium leading-snug">${item}</span>
+                                        <div class="flex gap-2 shrink-0">
+                                            <label class="relative cursor-pointer group">
+                                                <input type="radio" name="${inputName}" value="OK" class="peer sr-only check-radio" onchange="updatePreview()" required>
+                                                <div class="w-10 sm:w-12 py-1 rounded-sm text-center border border-slate-300 text-slate-400 group-hover:bg-slate-100 transition-all peer-checked:bg-green-600 peer-checked:border-green-600 peer-checked:text-white">
+                                                    <span class="text-[10px] font-black uppercase">OK</span>
+                                                </div>
+                                            </label>
+                                            <label class="relative cursor-pointer group">
+                                                <input type="radio" name="${inputName}" value="NOK" class="peer sr-only check-radio" onchange="updatePreview()">
+                                                <div class="w-10 sm:w-12 py-1 rounded-sm text-center border border-slate-300 text-slate-400 group-hover:bg-slate-100 transition-all peer-checked:bg-red-600 peer-checked:border-red-600 peer-checked:text-white">
+                                                    <span class="text-[10px] font-black uppercase">NOK</span>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div id="photo_section_${inputName}" class="hidden mt-3 p-3 bg-red-50 border border-red-200 rounded-sm animate-fade-in-down transition-all">
+                                        <label class="text-[9px] font-black text-red-700 uppercase tracking-widest mb-2 flex items-center justify-between">
+                                            <span>Anexo do Defeito (Máx 1)</span>
+                                            <span id="counter_${inputName}" class="bg-red-200 px-1.5 py-0.5 rounded-sm">0/1</span>
+                                        </label>
+                                        <input type="file" id="upload_${inputName}" accept="image/*" capture="environment" onchange="handleItemPhoto(event, '${inputName}')" class="text-xs w-full file:mr-2 file:py-1 file:px-2 file:rounded-sm file:border-0 file:bg-white file:text-red-700 file:font-bold border border-red-300 rounded-sm p-1 hover:file:bg-red-100 cursor-pointer">
+                                        <div id="preview_${inputName}" class="flex gap-2 mt-2 flex-wrap empty:hidden"></div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        groupHtml += `</div></div>`;
+                        wrapper.innerHTML += groupHtml;
+                    });
+                }
+            } else {
+                producerSelect.innerHTML = '<option value="">Aguardando cultura...</option>';
+                producerSelect.disabled = true;
+                container.classList.add('hidden');
+            }
+            updatePreview();
+        }
+
+        function updatePreview() {
+            const dateVal = document.getElementById('reportDate').value;
+            const culture = document.getElementById('cultureSelect').value;
+            const producer = document.getElementById('producerName').value || 'Não informado';
+            const inspector = getInspectorName() || 'Inspetor não informado';
+            const obs = document.getElementById('observations').value;
+
+            let displayDate = "--/--/----";
+            if (dateVal) {
+                const parts = dateVal.split('-');
+                displayDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+            }
+
+            document.getElementById('previewDateTime').innerText = displayDate;
+            document.getElementById('previewInspector').innerText = inspector;
+            document.getElementById('previewCulture').innerText = culture || '---';
+            document.getElementById('previewProducer').innerText = producer;
+            document.getElementById('previewReportId').innerText = currentReportId;
+
+            const totalPhotos = getTotalPhotosCount();
+            const globalCounter = document.getElementById('globalPhotoCounter');
+            if(globalCounter) globalCounter.innerText = `${totalPhotos} / 6`;
+
+            const previewContent = document.getElementById('previewContent');
+            const previewStatus = document.getElementById('previewStatus');
+
+            if (!culture) {
+                previewContent.innerHTML = `<div class="text-center text-slate-400 text-sm font-bold py-24 my-auto uppercase tracking-widest border-2 border-dashed border-slate-200 rounded-lg bg-slate-50">Aguardando dados da inspeção...</div>`;
+                previewStatus.className = "text-sm lg:text-lg font-black uppercase tracking-widest text-slate-500 px-3 py-1.5 bg-slate-200 rounded border border-slate-300 inline-block";
+                previewStatus.innerText = "PENDENTE";
+                return;
+            }
+
+            let allAnswered = true;
+            let nokCount = 0;
+            let hasDefectPhotos = false;
+            
+            // LADO 1: Tabela de Validação Estruturada em Blocos
+            let leftColHtml = `<div class="flex-1 flex flex-col gap-6">
+                <div>
+                    <h3 class="text-lg lg:text-xl font-black text-slate-800 uppercase tracking-widest border-b-2 border-slate-800 pb-2 mb-4">I. Relação de Conformidades</h3>
+                `;
+            
+            // LADO 2: Anexos Estruturados em Grelha
+            let rightColHtml = `<div class="w-full lg:w-[55%] shrink-0 flex flex-col gap-6 pl-0 lg:pl-10 border-t-2 lg:border-t-0 lg:border-l-2 border-slate-200 mt-8 lg:mt-0 pt-8 lg:pt-0">
+                                <h3 class="text-lg lg:text-xl font-black text-slate-800 uppercase tracking-widest border-b-2 border-slate-800 pb-2 mb-2">II. Registro Fotográfico</h3>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6 w-full items-stretch">`;
+            
+            checklistData[culture].forEach((group, groupIdx) => {
+                leftColHtml += `
+                <div class="border-2 border-slate-200 rounded-lg bg-white mb-6 overflow-hidden shadow-sm">
+                    <div class="bg-slate-100 px-4 py-3 border-b-2 border-slate-200">
+                        <span class="text-sm font-black text-slate-800 uppercase tracking-widest">${group.category}</span>
+                    </div>
+                    <ul class="divide-y divide-slate-100">`;
+                
+                group.items.forEach((item, itemIdx) => {
+                    const inputName = `chk_${groupIdx}_${itemIdx}`;
+                    const checkedOption = document.querySelector(`input[name="${inputName}"]:checked`);
+                    const photoSection = document.getElementById(`photo_section_${inputName}`);
+                    
+                    if (!checkedOption) {
+                        allAnswered = false;
+                        if(photoSection) photoSection.classList.add('hidden');
+                        leftColHtml += `
+                            <li class="flex flex-col sm:flex-row sm:items-center justify-between px-4 py-4 bg-white gap-2">
+                                <span class="text-base lg:text-lg text-slate-500 leading-tight flex-1">${item}</span>
+                                <span class="text-sm lg:text-base font-black text-slate-400 uppercase tracking-widest shrink-0 bg-slate-100 px-3 py-1 rounded">PENDENTE</span>
+                            </li>`;
+                    } else if (checkedOption.value === 'OK') {
+                        if(photoSection) photoSection.classList.add('hidden');
+                        leftColHtml += `
+                            <li class="flex flex-col sm:flex-row sm:items-center justify-between px-4 py-4 bg-white gap-2 hover:bg-slate-50 transition-colors">
+                                <span class="text-base lg:text-lg text-slate-800 font-medium leading-tight flex-1">${item}</span>
+                                <span class="text-sm lg:text-base font-black text-green-700 uppercase tracking-widest shrink-0">CONFORME</span>
+                            </li>`;
+                    } else { // NOK
+                        nokCount++;
+                        if(photoSection) photoSection.classList.remove('hidden');
+                        
+                        leftColHtml += `
+                            <li class="flex flex-col sm:flex-row sm:items-center justify-between px-4 py-4 bg-red-50/30 border-l-4 border-l-red-600 gap-2">
+                                <span class="text-base lg:text-lg text-red-900 font-bold leading-tight flex-1">${item}</span>
+                                <span class="text-sm lg:text-base font-black text-red-600 uppercase tracking-widest shrink-0">NÃO CONFORME</span>
+                            </li>`;
+
+                        if (itemPhotos[inputName] && itemPhotos[inputName].length > 0) {
+                            hasDefectPhotos = true;
+                            let photosHtml = `<div class="flex w-full h-full flex-1 items-stretch justify-center">`;
+                            itemPhotos[inputName].forEach(p => {
+                                photosHtml += `<img src="${p}" class="w-full h-full object-cover min-h-[400px] max-h-[600px] border border-slate-200 rounded">`;
+                            });
+                            photosHtml += `</div>`;
+
+                            rightColHtml += `
+                                <div class="flex flex-col bg-white border-2 border-slate-200 rounded-lg overflow-hidden shadow-sm h-full">
+                                    <div class="bg-slate-100 px-3 py-2 border-b-2 border-slate-200 min-h-[3.5rem] flex items-center">
+                                        <span class="text-xs lg:text-sm font-black text-slate-800 uppercase tracking-wider leading-tight">REF: ${item}</span>
+                                    </div>
+                                    <div class="p-2 mt-auto bg-slate-50 flex-1 flex flex-col">
+                                        ${photosHtml}
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    }
+                });
+                leftColHtml += `</ul></div>`;
+            });
+            
+            leftColHtml += `</div></div>`;
+            rightColHtml += `</div></div>`;
+
+            let checklistResultsHtml = `<div class="flex flex-col lg:flex-row w-full mt-2 gap-6 sm:gap-10">
+                ${leftColHtml}
+                ${hasDefectPhotos ? rightColHtml : ''}
+            </div>`;
+
+            if (!allAnswered) {
+                previewStatus.className = "text-sm lg:text-lg font-black uppercase tracking-widest text-slate-500";
+                previewStatus.innerText = "INSPECIONANDO...";
+            } else if (nokCount >= 3) {
+                previewStatus.className = "text-sm lg:text-lg font-black uppercase tracking-widest text-red-700";
+                previewStatus.innerText = "LOTE REPROVADO";
+            } else if (nokCount > 0) {
+                previewStatus.className = "text-sm lg:text-lg font-black uppercase tracking-widest text-amber-700";
+                previewStatus.innerText = "LOTE COM RESSALVA";
+            } else {
+                previewStatus.className = "text-sm lg:text-lg font-black uppercase tracking-widest text-green-800";
+                previewStatus.innerText = "LOTE APROVADO (CONFORME)";
+            }
+
+            if (obs.trim().length > 0) {
+                checklistResultsHtml += `
+                    <div class="mt-8 border-2 border-slate-200 rounded-lg bg-white overflow-hidden shadow-sm">
+                        <div class="bg-slate-100 px-4 py-3 border-b-2 border-slate-200">
+                            <h4 class="text-sm font-black text-slate-800 uppercase tracking-widest">III. Observações Técnicas Gerais</h4>
+                        </div>
+                        <div class="p-4">
+                            <p class="text-base text-slate-800 whitespace-pre-wrap font-medium leading-relaxed font-mono uppercase">${obs}</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            previewContent.innerHTML = checklistResultsHtml;
+            lucide.createIcons();
+        }
+
+        async function handleItemPhoto(event, inputName) {
+            const files = Array.from(event.target.files);
+            if (!files.length) return;
+            
+            const totalCount = getTotalPhotosCount();
+            if (totalCount + files.length > 6) {
+                showMessageModal('LIMITE TOTAL EXCEDIDO', 'A ficha permite no máximo 6 fotos no total.', 'error');
+                event.target.value = '';
+                return;
+            }
+
+            if (!itemPhotos[inputName]) itemPhotos[inputName] = [];
+            if (itemPhotos[inputName].length + files.length > 1) { 
+                showMessageModal('LIMITE EXCEDIDO', 'Permitido máximo 1 anexo técnico por defeito.', 'error'); 
+                event.target.value = '';
+                return; 
+            }
+
+            const uploadBtn = document.getElementById(`upload_${inputName}`);
+            uploadBtn.disabled = true;
+            for (const file of files) { 
+                if (!file.type.startsWith('image/')) continue; 
+                const base64 = await processImage(file); 
+                itemPhotos[inputName].push(base64); 
+            }
+            uploadBtn.value = ''; 
+            uploadBtn.disabled = false;
+            renderItemPhotos(inputName);
+            updatePreview();
+        }
+
+        function renderItemPhotos(inputName) {
+            const container = document.getElementById(`preview_${inputName}`);
+            const counter = document.getElementById(`counter_${inputName}`);
+            const photos = itemPhotos[inputName] || [];
+            if(counter) counter.innerText = `${photos.length}/1`;
+            if (!container) return;
+            if (photos.length === 0) { container.innerHTML = ''; return; }
+            container.innerHTML = photos.map((photo, index) => `
+                <div class="relative inline-block mt-2">
+                    <img src="${photo}" class="w-16 h-16 object-cover rounded-sm border border-slate-300 shadow-sm bg-white p-0.5">
+                    <button type="button" onclick="removeItemPhoto('${inputName}', ${index})" class="absolute -top-2 -right-2 bg-red-600 border border-red-800 text-white rounded-sm p-0.5 shadow-md hover:bg-red-700 transition-colors"><i data-lucide="x" class="w-3 h-3"></i></button>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function removeItemPhoto(inputName, index) { 
+            itemPhotos[inputName].splice(index, 1); 
+            renderItemPhotos(inputName); 
+            updatePreview();
+        }
+
+        function processImage(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 1200; const MAX_HEIGHT = 1200;
+                        let width = img.width; let height = img.height;
+                        if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } } 
+                        else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
+                        canvas.width = width; canvas.height = height;
+                        const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
+                        resolve(canvas.toDataURL('image/jpeg', 0.85));
+                    }
+                    img.src = e.target.result;
+                }
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function confirmBeforeSend() {
+            const form = document.getElementById('checklistForm');
+            if (!form.checkValidity()) { form.reportValidity(); return; }
+            const culture = document.getElementById('cultureSelect').value;
+            let allChecked = true;
+            if(culture && checklistData[culture]){
+                checklistData[culture].forEach((group, groupIdx) => {
+                    group.items.forEach((item, itemIdx) => {
+                        const inputName = `chk_${groupIdx}_${itemIdx}`;
+                        if(!document.querySelector(`input[name="${inputName}"]:checked`)) { allChecked = false; }
+                    });
+                });
+            }
+            if(!allChecked) { showMessageModal('DOCUMENTO INCOMPLETO', 'Todos os critérios técnicos devem ser avaliados antes da emissão.', 'error'); return; }
+            document.getElementById('confirmModal').classList.remove('hidden'); 
+            lucide.createIcons(); 
+        }
+
+        function hideConfirmModal() { document.getElementById('confirmModal').classList.add('hidden'); }
+        function executeSend() { hideConfirmModal(); downloadAndShare(); }
+
+        let isProcessingShare = false;
+        async function downloadAndShare() {
+            if (isProcessingShare) return;
+            isProcessingShare = true;
+            const element = document.getElementById('report-card');
+            const btnSpan = document.querySelector('button[onclick="confirmBeforeSend()"] span.hidden.sm\\:inline') || document.querySelector('button[onclick="confirmBeforeSend()"] span');
+            const originalText = btnSpan.innerText; 
+            btnSpan.innerText = "GERANDO...";
+            try {
+                const images = element.querySelectorAll('img');
+                await Promise.all(Array.from(images).map(img => { 
+                    if (img.complete) return Promise.resolve(); 
+                    return new Promise(resolve => { img.onload = resolve; img.onerror = resolve; }); 
+                }));
+                
+                const canvas = await html2canvas(element, { 
+                    scale: 1,
+                    useCORS: true, 
+                    scrollY: -window.scrollY, 
+                    backgroundColor: '#ffffff', 
+                    windowWidth: 3508, 
+                    onclone: (doc) => {
+                        doc.documentElement.style.fontSize = '32px'; // Fonte ajustada perfeitamente ao novo formato de caixas
+                        const el = doc.getElementById('report-card'); 
+                        const content = doc.getElementById('previewContent');
+                        if (el) { 
+                            el.style.width = '3508px'; 
+                            el.style.minWidth = '3508px'; 
+                            el.style.maxWidth = '3508px'; 
+                            el.style.minHeight = '2480px'; 
+                            el.style.height = 'auto'; 
+                            el.style.margin = '0'; 
+                            el.style.borderRadius = '0'; 
+                            el.style.border = 'none'; 
+                            el.classList.remove('shadow-xl', 'border', 'mx-auto'); // Remove sombras e bordas soltas no print
+                        }
+                        if (content) { 
+                            content.style.height = 'auto'; 
+                            content.style.flex = '1'; 
+                            content.style.overflow = 'visible'; 
+                            content.style.maxHeight = 'none'; 
+                        }
+                    }
+                });
+                
+                const culture = document.getElementById('cultureSelect').value;
+                const producer = document.getElementById('producerName').value;
+                const inspector = getInspectorName();
+                const dateVal = document.getElementById('reportDate').value;
+                const obs = document.getElementById('observations').value;
+                const dateObj = new Date(dateVal + "T00:00:00");
+                const dateStr = dateObj.toLocaleDateString('pt-BR').replace(/\//g, '-');
+                const filename = `FCQ_${currentReportId}_${culture}_${dateStr}.png`;
+                let checklistTextWhatsApp = "";
+                let allItemsList = []; 
+                let nokCountShare = 0;
+                checklistData[culture].forEach((group, groupIdx) => {
+                    let groupNokText = "";
+                    let groupHasNok = false;
+                    group.items.forEach((item, itemIdx) => {
+                        const inputName = `chk_${groupIdx}_${itemIdx}`;
+                        const checked = document.querySelector(`input[name="${inputName}"]:checked`);
+                        if(checked) {
+                            if (checked.value === 'NOK') {
+                                nokCountShare++; groupHasNok = true; groupNokText += `\n❌ ${item}`;
+                                allItemsList.push({ category: group.category, item: item, condition: "NOK" });
+                            } else { allItemsList.push({ category: group.category, item: item, condition: "OK" }); }
+                        }
+                    });
+                    if (groupHasNok) { checklistTextWhatsApp += `\n*${group.category.toUpperCase()}*` + groupNokText + `\n`; }
+                });
+                
+                let statusLabel = "";
+                let lotStatusText = "";
+                if (nokCountShare >= 3) {
+                    statusLabel = "🔴 *LOTE REPROVADO*";
+                    lotStatusText = "REPROVADO";
+                } else if (nokCountShare > 0) {
+                    statusLabel = "🟠 *LOTE COM RESSALVA*";
+                    lotStatusText = "COM RESSALVA";
+                } else {
+                    statusLabel = "🟢 *LOTE APROVADO (CONFORME)*";
+                    lotStatusText = "APROVADO";
+                }
+
+                let shareText = `📄 *FICHA DE CONTROLE DE QUALIDADE - SPG*\n\n*ID da Ficha:* ${currentReportId}\n*Produto:* ${culture}\n*Origem:* ${producer}\n*Inspetor:* ${inspector}\n*Data:* ${dateObj.toLocaleDateString('pt-BR')}\n*Parecer:* ${statusLabel}\n`;
+                if (nokCountShare > 0) { shareText += `\n*NÃO CONFORMIDADES IDENTIFICADAS:*${checklistTextWhatsApp}`; }
+                else { shareText += `\n*✅ LOTE CONFORME:* Todos os parâmetros de qualidade foram validados.\n`; }
+                if (obs.trim().length > 0) { shareText += `\n*Observações Técnicas:* \n${obs.trim()}\n`; }
+                
+                let payload = [];
+                allItemsList.forEach((itemData, index) => {
+                    payload.push({ id: currentReportId, date: dateObj.toLocaleDateString('pt-BR'), time: new Date().toLocaleTimeString('pt-BR'), culture: culture, producer: producer, inspector: inspector, status: lotStatusText, condition: itemData.condition, category: itemData.category, defectItem: itemData.condition === 'NOK' ? itemData.item : "-", okItem: itemData.condition === 'OK' ? itemData.item : "-", observations: index === 0 ? (obs.trim() || "Nenhuma") : "-" });
+                });
+                sendDataToGoogleSheets(payload);
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                const file = new File([blob], filename, { type: 'image/png' });
+                if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) { 
+                    try { await navigator.share({ files: [file], title: filename, text: shareText }); } catch (shareErr) { console.log("Cancelado:", shareErr); }
+                } else { 
+                    downloadFile(canvas.toDataURL('image/png'), filename); 
+                    setTimeout(() => { window.open(`https://web.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank'); }, 1500); 
+                }
+            } catch (err) { console.error(err); showMessageModal('ERRO DE SISTEMA', 'Falha ao processar o arquivo.', 'error'); } 
+            finally { 
+                if(btnSpan) btnSpan.innerText = originalText; 
+                isProcessingShare = false; 
+                currentReportId = generateReportId(); 
+                updatePreview();
+            }
+        }
+
+        async function sendDataToGoogleSheets(payload) {
+            const SCRIPT_URL = "SUA_NOVA_URL_DO_APPS_SCRIPT_AQUI"; 
+            if (!SCRIPT_URL || SCRIPT_URL === "SUA_NOVA_URL_DO_APPS_SCRIPT_AQUI") { return; }
+            try { await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) }); } 
+            catch (err) { console.error("Falha na sincronização:", err); }
+        }
+
+        function downloadFile(uri, name) { const link = document.createElement('a'); link.href = uri; link.download = name; document.body.appendChild(link); link.click(); document.body.removeChild(link); }
+        
+        function showMessageModal(title, message, type) {
+            const modal = document.getElementById('messageModal'); 
+            const iconContainer = document.getElementById('msgIconContainer');
+            const titleEl = document.getElementById('msgTitle'); 
+            const textEl = document.getElementById('msgText');
+            
+            titleEl.innerText = title; 
+            textEl.innerText = message;
+            
+            if (iconContainer) {
+                if (type === 'error') { 
+                    iconContainer.className = "mx-auto flex items-center justify-center h-12 w-12 rounded bg-red-100 mb-4 border border-red-200"; 
+                    iconContainer.innerHTML = '<i data-lucide="alert-triangle" class="h-6 w-6 text-red-600"></i>'; 
+                } else { 
+                    iconContainer.className = "mx-auto flex items-center justify-center h-12 w-12 rounded bg-slate-100 mb-4 border border-slate-300"; 
+                    iconContainer.innerHTML = '<i data-lucide="info" class="h-6 w-6 text-slate-600"></i>'; 
+                }
+            }
+            
+            modal.classList.remove('hidden'); 
+            lucide.createIcons();
+        }
+        
+        function hideMessageModal() { document.getElementById('messageModal').classList.add('hidden'); }
+    </script>
+</body>
+</html>
